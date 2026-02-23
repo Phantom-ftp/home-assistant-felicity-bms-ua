@@ -1,0 +1,218 @@
+# Основні налаштування проєкту
+esphome:
+  name: "bms-monitor"
+  friendly_name: BMS Monitor Felicity
+  min_version: 2025.11.0
+  name_add_mac_suffix: false
+
+# Конфігурація мікроконтролера
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Логування (вивід діагностики в консоль)
+logger:
+  level: INFO
+
+# Зв'язок з Home Assistant
+api:
+
+# Дистанційне оновлення прошивки
+ota:
+- platform: esphome
+
+# Налаштування Wi-Fi (дані беруться з файлу secrets.yaml)
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Синхронізація часу з Home Assistant
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+# Налаштування CAN-шини для спілкування з BMS
+canbus:
+  - platform: esp32_can
+    id: bms_can
+    can_id: 0x100
+    tx_pin: GPIO17
+    rx_pin: GPIO16
+    bit_rate: 500kbps # Швидкість шини 500 кбіт/с
+    mode: NORMAL
+    on_frame:
+      # Пакет 0x351: Обробка стану здоров'я акумулятора (SOH)
+      - can_id: 0x351
+        then:
+          - lambda: |-
+              // Читання 4 та 5 байтів, множення на 0.1 для отримання відсотків
+              float val = (uint16_t)(x[5] << 8 | x[4]) * 0.1;
+              if (val <= 100) id(battery_soh).publish_state(val);
+
+      # Пакет 0x355: Обробка рівня заряду (SOC)
+      - can_id: 0x355
+        then:
+          - lambda: |-
+              // Читання 0 та 1 байтів для отримання % заряду
+              float val = (uint16_t)(x[1] << 8 | x[0]);
+              if (val <= 100) id(battery_soc).publish_state(round(val));
+
+      # Пакет 0x356: Напруга, Струм, Температура та розрахунок Потужності
+      - can_id: 0x356
+        then:
+          - lambda: |-
+              // Декодування даних з пакету
+              float v = (uint16_t)(x[1] << 8 | x[0]) * 0.01; // Напруга (V)
+              float c = (int16_t)(x[3] << 8 | x[2]) * 0.1;   // Струм (A)
+              float t = (int16_t)(x[5] << 8 | x[4]) * 0.1;   // Температура (°C)
+              float p = v * c;                               // Розрахунок Ватт (P = U * I)
+
+              // Публікація базових значень
+              id(battery_voltage).publish_state(v);
+              id(battery_current).publish_state(c);
+              id(battery_temp).publish_state(t);
+              id(battery_power).publish_state(p);
+
+              // Логіка розділення на Заряд/Розряд з урахуванням "шуму" (1.8A)
+              // Це допомагає уникнути постійного перемикання при мізерних токах
+              if (c > 1.8) {
+                // Стан: Заряджання
+                id(charge_current).publish_state(c);
+                id(discharge_current).publish_state(0);
+                id(charge_power).publish_state(p);
+                id(discharge_power).publish_state(0);
+                id(battery_status).publish_state("Charging");
+              } else if (c < -1.8) {
+                // Стан: Розряджання (використовуємо fabs для позитивних значень у сенсорах)
+                id(charge_current).publish_state(0);
+                id(discharge_current).publish_state(fabs(c));
+                id(charge_power).publish_state(0);
+                id(discharge_power).publish_state(fabs(p));
+                id(battery_status).publish_state("Discharging");
+              } else {
+                // Стан: Спокій або дуже мале навантаження
+                id(charge_current).publish_state(0);
+                id(discharge_current).publish_state(0);
+                id(charge_power).publish_state(0);
+                id(discharge_power).publish_state(0);
+                id(battery_status).publish_state("Idle/Standby");
+              }
+
+# Визначення віртуальних сенсорів для Home Assistant
+sensor:
+  # Електричні параметри
+  - platform: template
+    name: "Battery Voltage"
+    id: battery_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    state_class: measurement
+
+  - platform: template
+    name: "Battery Current"
+    id: battery_current
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    device_class: current
+    state_class: measurement
+
+  - platform: template
+    name: "Battery Power"
+    id: battery_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    device_class: power
+    state_class: measurement
+
+  # Сенсори для енергопанелі (окремо вхід та вихід)
+  - platform: template
+    name: "Charge Current"
+    id: charge_current
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    device_class: current
+    state_class: measurement
+    icon: "mdi:battery-plus"
+
+  - platform: template
+    name: "Charge Power"
+    id: charge_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    device_class: power
+    state_class: measurement
+    icon: "mdi:transmission-tower-import"
+
+  - platform: template
+    name: "Discharge Current"
+    id: discharge_current
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    device_class: current
+    state_class: measurement
+    icon: "mdi:battery-minus"
+
+  - platform: template
+    name: "Discharge Power"
+    id: discharge_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    device_class: power
+    state_class: measurement
+    icon: "mdi:transmission-tower-export"
+
+  # Стан акумулятора
+  - platform: template
+    name: "Battery SOC"
+    id: battery_soc
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    state_class: measurement
+
+  - platform: template
+    name: "Battery Temp"
+    id: battery_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+
+  - platform: template
+    name: "Battery SOH"
+    id: battery_soh
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    state_class: measurement
+
+  # Розрахунок добової енергії (кВт·год) для статистики
+  - platform: total_daily_energy
+    name: "Battery Daily Energy In"
+    id: battery_daily_energy_in
+    power_id: charge_power
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 3
+    device_class: energy
+    state_class: total_increasing
+    filters:
+      - multiply: 0.001 # Конвертація Вт у кВт
+
+  - platform: total_daily_energy
+    name: "Battery Daily Energy Out"
+    id: battery_daily_energy_out
+    power_id: discharge_power
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 3
+    device_class: energy
+    state_class: total_increasing
+    filters:
+      - multiply: 0.001 # Конвертація Вт у кВт
+
+# Текстовий сенсор для відображення режиму роботи словами
+text_sensor:
+  - platform: template
+    name: "Battery Status"
+    id: battery_status
+    icon: "mdi:battery-clock"
