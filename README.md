@@ -346,12 +346,10 @@ cards:
         entity: sensor.bms_felicity_battery_soc
         primary: "{{ states(entity) | int(0) }}%"
         secondary: Заряд
-        # Динамічна іконка: змінюється кожні 10% заряду
         icon: >
           {% set pct = states(entity) | int(0) %} {% if pct > 90 %} mdi:battery
           {% elif pct > 10 %} mdi:battery-{{ (pct / 10) | int }}0 {% else %}
           mdi:battery-outline {% endif %}
-        # Колір іконки: зелений (>30%), помаранчевий (20-30%), червоний (<20%)
         color: >
           {% set pct = states(entity) | int(0) %} {% if pct >= 31 %} green {%
           elif pct >= 20 %} orange {% else %} red {% endif %}
@@ -366,20 +364,29 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Динамічний фон картки відповідно до рівня заряду */
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
               {% set pct = states(config.entity) | int(0) %}
               {% if pct >= 31 %}
-                background: #E8F5E9 !important;
+                background-color: rgba(76, 175, 80, 0.15) !important;
               {% elif pct >= 20 %}
-                background: #FFF3E0 !important;
+                background-color: rgba(255, 152, 0, 0.15) !important;
               {% else %}
-                background: #FFEBEE !important;
+                background-color: rgba(244, 67, 54, 0.2) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 30px !important; 
-              --title-font-size: 18px !important; 
-              --secondary-font-size: 10px; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 30px !important;
+              --title-font-size: 18px !important;
+              --secondary-font-size: 10px;
               --title-font-weight: 700;
               --mush-spacing: 0px !important;
             }
@@ -390,7 +397,6 @@ cards:
         primary: "{{ states(entity) | float(0) | round(2) }} V"
         secondary: Напруга
         icon: mdi:lightning-bolt
-        # Колірна індикація напруги (поріг 26V та 25V)
         icon_color: >
           {% set v = states(entity) | float(0) %} {% if v >= 26.0 %} green {%
           elif v >= 24.99 %} orange {% else %} red {% endif %}
@@ -404,19 +410,28 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Візуалізація фону залежно від вольтажу */
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
               {% set v = states(config.entity) | float(0) %}
               {% if v >= 26.0 %}
-                background: #E8F5E9 !important;
+                background-color: rgba(76, 175, 80, 0.15) !important;
               {% elif v >= 24.99 %}
-                background: #FFF3E0 !important;
+                background-color: rgba(255, 152, 0, 0.15) !important;
               {% else %}
-                background: #FFEBEE !important;
+                background-color: rgba(244, 67, 54, 0.2) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 30px !important; 
-              --title-font-size: 16px !important; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 30px !important;
+              --title-font-size: 16px !important;
               --secondary-font-size: 10px;
               --title-font-weight: 700;
               --mush-spacing: 0px !important;
@@ -427,13 +442,12 @@ cards:
         entity: sensor.bms_felicity_battery_status
         primary: >
           {% set status = states(entity) %}  {% if 'idle' in status | lower or
-          'standby' in status | lower %}  
-            Standby  
-          {% else %}  
-            {{ status[0:8] }}  
-          {% endif %}
+          'standby' in status | lower %}
+              Standby
+            {% else %}
+              {{ status[0:8] }}
+            {% endif %}
         secondary: Стан
-        # Зміна іконок під конкретний процес
         icon: >
           {% set s = states(entity) | lower %}  {% if s == 'discharging' %}
           mdi:battery-minus  {% elif s == 'charging' %} mdi:battery-charging  {%
@@ -453,22 +467,31 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Колір фону: помаранчевий для розряду, синій для заряду */
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
               {% set s = states(config.entity) | lower %}
               {% if s == 'discharging' %}
-                background: #FFF3E0 !important;
+                background-color: rgba(255, 152, 0, 0.15) !important;
               {% elif s == 'charging' %}
-                background: #E3F2FD !important;
+                background-color: rgba(33, 150, 243, 0.15) !important;
               {% elif 'idle' in s or 'standby' in s %}
-                background: #E8F5E9 !important;
+                background-color: rgba(76, 175, 80, 0.15) !important;
               {% else %}
-                background: #F5F5F5 !important;
+                background-color: rgba(128, 128, 128, 0.1) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 30px !important; 
-              --title-font-size: 12px; 
-              --secondary-font-size: 10px; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 30px !important;
+              --title-font-size: 12px;
+              --secondary-font-size: 10px;
               --mush-spacing: 0px !important;
             }
 
@@ -479,12 +502,12 @@ cards:
     cards:
       # Картка сили струму (Ампери)
       - type: custom:mushroom-template-card
-        entity: sensor.bms_felicity_battery_status
+        entity: sensor.bms_felicity_battery_current
         tap_action:
           action: more-info
-          entity: sensor.bms_felicity_battery_current # Покаже графік струму
+          entity: sensor.bms_felicity_battery_current
         primary: |
-          {% set s = states(entity) | lower %}
+          {% set s = states('sensor.bms_felicity_battery_status') | lower %}
           {% if s == 'discharging' %}
             {{ states('sensor.bms_felicity_discharge_current') | float(0) | round(2) }} A
           {% elif s == 'charging' %}
@@ -493,11 +516,11 @@ cards:
             0.00 A
           {% endif %}
         secondary: >
-          {% set s = states(entity) | lower %} {{ 'Струм розряду' if s ==
+          {% set s = states('sensor.bms_felicity_battery_status') | lower %} {{ 'Струм розряду' if s ==
           'discharging' else 'Струм заряду' }}
         icon: mdi:lightning-bolt
         icon_color: >
-          {% set s = states(entity) | lower %} {% set val =
+          {% set s = states('sensor.bms_felicity_battery_status') | lower %} {% set val =
           states('sensor.bms_felicity_discharge_current') | float(0) %} {% if s
           == 'charging' %} blue {% elif s == 'discharging' %}
             {% if val > 40 %} red
@@ -514,34 +537,43 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Фон стає червоним при великому струмі розряду (>40A) */
-              {% set s = states(config.entity) | lower %}
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
+              {% set s = states('sensor.bms_felicity_battery_status') | lower %}
               {% set val = states('sensor.bms_felicity_discharge_current') | float(0) %}
               {% if s == 'charging' %}
-                background: #E3F2FD !important;
+                background-color: rgba(33, 150, 243, 0.15) !important;
               {% elif s == 'discharging' %}
-                {% if val > 40 %} background: #FFEBEE !important;
-                {% elif val > 30 %} background: #FFF3E0 !important;
-                {% else %} background: #E8F5E9 !important; {% endif %}
+                {% if val > 40 %} background-color: rgba(244, 67, 54, 0.2) !important;
+                {% elif val > 30 %} background-color: rgba(255, 152, 0, 0.15) !important;
+                {% else %} background-color: rgba(76, 175, 80, 0.15) !important; {% endif %}
               {% else %}
-                background: #F5F5F5 !important;
+                background-color: rgba(128, 128, 128, 0.05) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 26px !important; 
-              --title-font-size: 13px; 
-              --secondary-font-size: 9px; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 26px !important;
+              --title-font-size: 13px;
+              --secondary-font-size: 9px;
               --mush-spacing: 0px !important;
             }
 
       # Картка потужності (Вати)
       - type: custom:mushroom-template-card
-        entity: sensor.bms_felicity_battery_status
+        entity: sensor.bms_felicity_battery_power
         tap_action:
           action: more-info
-          entity: sensor.bms_felicity_battery_power # Покаже графік потужності
+          entity: sensor.bms_felicity_battery_power
         primary: |
-          {% set s = states(entity) | lower %}
+          {% set s = states('sensor.bms_felicity_battery_status') | lower %}
           {% if s == 'discharging' %}
             {{ states('sensor.bms_felicity_discharge_power') | float(0) | round(0) }} W
           {% elif s == 'charging' %}
@@ -550,11 +582,11 @@ cards:
             0 W
           {% endif %}
         secondary: >
-          {% set s = states(entity) | lower %} {{ 'Потужність розряду' if s ==
+          {% set s = states('sensor.bms_felicity_battery_status') | lower %} {{ 'Потужність розряду' if s ==
           'discharging' else 'Потужність заряду' }}
         icon: mdi:flash
         icon_color: >
-          {% set s = states(entity) | lower %} {% set val =
+          {% set s = states('sensor.bms_felicity_battery_status') | lower %} {% set val =
           states('sensor.bms_felicity_discharge_power') | float(0) %} {% if s ==
           'charging' %} blue {% elif s == 'discharging' %}
             {% if val > 1200 %} red
@@ -571,23 +603,32 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Колірна індикація критичного навантаження (>1200W) */
-              {% set s = states(config.entity) | lower %}
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
+              {% set s = states('sensor.bms_felicity_battery_status') | lower %}
               {% set val = states('sensor.bms_felicity_discharge_power') | float(0) %}
               {% if s == 'charging' %}
-                background: #E3F2FD !important;
+                background-color: rgba(33, 150, 243, 0.15) !important;
               {% elif s == 'discharging' %}
-                {% if val > 1200 %} background: #FFEBEE !important;
-                {% elif val > 1000 %} background: #FFF3E0 !important;
-                {% else %} background: #E8F5E9 !important; {% endif %}
+                {% if val > 1200 %} background-color: rgba(244, 67, 54, 0.2) !important;
+                {% elif val > 1000 %} background-color: rgba(255, 152, 0, 0.15) !important;
+                {% else %} background-color: rgba(76, 175, 80, 0.15) !important; {% endif %}
               {% else %}
-                background: #F5F5F5 !important;
+                background-color: rgba(128, 128, 128, 0.05) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 26px !important; 
-              --title-font-size: 13px; 
-              --secondary-font-size: 9px; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 26px !important;
+              --title-font-size: 13px;
+              --secondary-font-size: 9px;
               --mush-spacing: 0px !important;
             }
 
@@ -615,20 +656,29 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Контроль оптимального температурного діапазону (20-30°C) */
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
               {% set t = states(config.entity) | float(0) %}
               {% if t >= 20 and t <= 30 %}
-                background: #E8F5E9 !important;
+                background-color: rgba(76, 175, 80, 0.15) !important;
               {% elif t >= 10 and t <= 40 %}
-                background: #FFF3E0 !important;
+                background-color: rgba(255, 152, 0, 0.15) !important;
               {% else %}
-                background: #FFEBEE !important;
+                background-color: rgba(244, 67, 54, 0.2) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 26px !important; 
-              --title-font-size: 13px; 
-              --secondary-font-size: 9px; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 26px !important;
+              --title-font-size: 13px;
+              --secondary-font-size: 9px;
               --mush-spacing: 0px !important;
             }
 
@@ -651,20 +701,29 @@ cards:
               justify-content: center !important;
               align-items: flex-start !important;
               padding-left: 0px !important;
-              /* Візуалізація деградації акумулятора */
+              background: var(--ha-card-background, var(--card-background-color, white)) !important;
+              position: relative;
+            }
+            ha-card::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              border-radius: inherit;
+              pointer-events: none;
               {% set h = states(config.entity) | float(0) %}
               {% if h >= 90 %}
-                background: #E8F5E9 !important;
+                background-color: rgba(76, 175, 80, 0.15) !important;
               {% elif h >= 70 %}
-                background: #FFF3E0 !important;
+                background-color: rgba(255, 152, 0, 0.15) !important;
               {% else %}
-                background: #FFEBEE !important;
+                background-color: rgba(244, 67, 54, 0.2) !important;
               {% endif %}
-            } mushroom-state-item { margin: 0px !important; padding: 0px
-            !important; } :host { 
-              --mush-icon-size: 26px !important; 
-              --title-font-size: 13px; 
-              --secondary-font-size: 9px; 
+            }
+            mushroom-state-item { margin: 0px !important; padding: 0px !important; }
+            :host {
+              --mush-icon-size: 26px !important;
+              --title-font-size: 13px;
+              --secondary-font-size: 9px;
               --mush-spacing: 0px !important;
             }
   
